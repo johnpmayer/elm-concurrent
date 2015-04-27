@@ -9,6 +9,7 @@
     "exposed-modules": [
       "Concurrent"
     ],
+    "native-modules": true,
     "dependencies": {
         "elm-lang/core": "2.0.0 <= v < 3.0.0",
         "imeckler/queue": "1.0.0 <= v < 2.0.0"

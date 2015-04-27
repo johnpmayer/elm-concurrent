@@ -12,9 +12,9 @@ Elm.Native.Concurrent.make = function(localRuntime) {
   var Queue = Elm.Queue.make(localRuntime);
   var Task = Elm.Native.Task.make(localRuntime);
   
-  function newEmptyMVar()
+  function newEmptyMVar(_fake)
   {
-    return {
+    return Task.succeed({
       value: Maybe.Nothing,
       consumer: {
         flag: {},
@@ -24,7 +24,7 @@ Elm.Native.Concurrent.make = function(localRuntime) {
         flag: {},
         queue: Queue.empty
       }
-    };
+    });
   }
   
   function _tryWakeup(mvar, name) {
@@ -97,4 +97,9 @@ Elm.Native.Concurrent.make = function(localRuntime) {
     });
   }
   
+  return localRuntime.Native.Concurrent.values = {
+    newEmptyMVar: newEmptyMVar,
+    takeMVar: takeMVar,
+    putMVar: F2(putMVar)
+  };
 }

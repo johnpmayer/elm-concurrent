@@ -26,11 +26,13 @@ https://hackage.haskell.org/package/base/docs/Control-Concurrent-MVar.html
 -}
   
 import Task exposing (Task, andThen, succeed)
+import Native.Concurrent
+import Queue
   
 type MVar a = OpaqueMVar
 
 newEmptyMVar : Task x (MVar a)
-newEmptyMVar = Native.Concurrent.newEmptyMVar
+newEmptyMVar = Native.Concurrent.newEmptyMVar ()
 
 newMVar : a -> Task x (MVar a)
 newMVar value = 
