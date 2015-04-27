@@ -11,6 +11,7 @@ Elm.Native.Concurrent.make = function(localRuntime) {
   var Maybe = Elm.Maybe.make(localRuntime);
   var Queue = Elm.Queue.make(localRuntime);
   var Task = Elm.Native.Task.make(localRuntime);
+  var Utils = Elm.Native.Utils.make(localRuntime);
   
   function newEmptyMVar(_fake)
   {
@@ -53,7 +54,7 @@ Elm.Native.Concurrent.make = function(localRuntime) {
         var value = mvar.value._0;
         mvar.value = Maybe.Nothing;
         _tryWakeup(mvar, "producer");
-        callback(value);
+        callback(Task.succeed(value));
       };
       var noKnownConsumers = Queue.isEmpty(mvar.consumer.queue);
       mvar.consumer.queue = A2(Queue.push, wakeupTake, mvar.consumer.queue);
@@ -80,7 +81,7 @@ Elm.Native.Concurrent.make = function(localRuntime) {
         }
         mvar.value = Maybe.Just(value);
         _tryWakeup(mvar, "consumer");
-        callback();
+        callback(Task.succeed(Utils.Tuple0));
       };
       var noKnownProducers = Queue.isEmpty(mvar.producer.queue);
       mvar.producer.queue = A2(Queue.push, wakeupPut, mvar.producer.queue);
