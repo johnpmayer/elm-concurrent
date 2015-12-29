@@ -34,7 +34,7 @@ type MVar a = OpaqueMVar
 
 {-| Create an MVar "empty", without an initial value -}
 newEmptyMVar : Task x (MVar a)
-newEmptyMVar = Native.Concurrent.newEmptyMVar ()
+newEmptyMVar = Native.Concurrent.MVar.newEmptyMVar ()
 
 {-| Create an MVar holding the provided initial value -}
 newMVar : a -> Task x (MVar a)
@@ -45,8 +45,8 @@ newMVar value =
 
 {-| Take the value held by the MVar, blocking if empty. Multiple blocking consumers are woken in FIFO order. -}
 takeMVar : MVar a -> Task x a
-takeMVar = Native.Concurrent.takeMVar
+takeMVar = Native.Concurrent.MVar.takeMVar
 
 {-| Put the provided value in the MVar, blocking if occupied. Multiple blocking producers are woken in FIFO order. -}  
 putMVar : MVar a -> a -> Task x ()
-putMVar = Native.Concurrent.putMVar
+putMVar = Native.Concurrent.MVar.putMVar

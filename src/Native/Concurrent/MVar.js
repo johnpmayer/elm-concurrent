@@ -1,11 +1,13 @@
 Elm.Native.Concurrent = {};
-Elm.Native.Concurrent.make = function(localRuntime) {
+Elm.Native.Concurrent.MVar = {};
+Elm.Native.Concurrent.MVar.make = function(localRuntime) {
   
   localRuntime.Native = localRuntime.Native || {};
   localRuntime.Native.Concurrent = localRuntime.Native.Concurrent || {};
-  if (localRuntime.Native.Concurrent.values)
+  localRuntime.Native.Concurrent.MVar = localRuntime.Native.Concurrent.MVar || {};
+  if (localRuntime.Native.Concurrent.MVar.values)
   {
-    return localRuntime.Native.Concurrent.values;
+    return localRuntime.Native.Concurrent.MVar.values;
   }
   
   var Maybe = Elm.Maybe.make(localRuntime);
@@ -98,7 +100,7 @@ Elm.Native.Concurrent.make = function(localRuntime) {
     });
   }
   
-  return localRuntime.Native.Concurrent.values = {
+  return localRuntime.Native.Concurrent.MVar.values = {
     newEmptyMVar: newEmptyMVar,
     takeMVar: takeMVar,
     putMVar: F2(putMVar)
