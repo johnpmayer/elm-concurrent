@@ -1,5 +1,5 @@
 
-module Concurrent 
+module Concurrent.MVar
   ( MVar
   , newEmptyMVar, newMVar
   , takeMVar, putMVar
@@ -26,7 +26,7 @@ https://hackage.haskell.org/package/base/docs/Control-Concurrent-MVar.html
 -}
 
 import Task exposing (Task, andThen, succeed)
-import Native.Concurrent
+import Native.Concurrent.MVar
 import Queue -- Required by Native Code
 
 {-| Type should not be instantiated, handled in Native Code -}

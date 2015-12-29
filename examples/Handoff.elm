@@ -1,7 +1,7 @@
 
 module Handoff where
 
-import Concurrent exposing (MVar, newEmptyMVar, takeMVar, putMVar)
+import Concurrent.MVar exposing (MVar, newEmptyMVar, takeMVar, putMVar)
 import Graphics.Element exposing (Element, show)
 import Signal exposing (constant, Mailbox, mailbox, map, send)
 import Task exposing (Task, andThen, spawn, succeed)

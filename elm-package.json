@@ -7,7 +7,8 @@
         "src"
     ],
     "exposed-modules": [
-      "Concurrent"
+      "Concurrent.Chan",
+      "Concurrent.MVar"
     ],
     "native-modules": true,
     "dependencies": {
