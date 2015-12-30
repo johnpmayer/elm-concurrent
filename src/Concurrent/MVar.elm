@@ -40,7 +40,7 @@ type MVar a = OpaqueMVar
 
 {-| Create an MVar "empty", without an initial value -}
 newEmptyMVar : Task x (MVar a)
-newEmptyMVar = Native.Concurrent.MVar.newEmptyMVar ()
+newEmptyMVar = Native.Concurrent.MVar.newEmptyMVar
 
 {-| Create an MVar holding the provided initial value -}
 newMVar : a -> Task x (MVar a)

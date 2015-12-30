@@ -14,10 +14,9 @@ Elm.Native.Concurrent.MVar.make = function(localRuntime) {
   var Queue = Elm.Queue.make(localRuntime);
   var Task = Elm.Native.Task.make(localRuntime);
   var Utils = Elm.Native.Utils.make(localRuntime);
-  
-  function newEmptyMVar(_fake)
-  {
-    return Task.succeed({
+
+  var newEmptyMVar = Task.asyncFunction(function(callback) {
+    callback(Task.succeed({
       value: Maybe.Nothing,
       consumer: {
         flag: {},
@@ -27,19 +26,19 @@ Elm.Native.Concurrent.MVar.make = function(localRuntime) {
         flag: {},
         queue: Queue.empty
       }
-    });
-  }
+    }));
+  });
   
   function _tryWakeup(mvar, name) {
-    var nextProducer = Queue.pop(mvar[name].queue);
-    switch (nextProducer.ctor) {
+    var nextTask = Queue.pop(mvar[name].queue);
+    switch (nextTask.ctor) {
       case "Nothing":
         // Nobody to wake up
         break;
       case "Just":
         // Box is now empty, wake up the next producer
-        var wakeup = nextProducer._0._0;
-        var tailQ = nextProducer._0._1;
+        var wakeup = nextTask._0._0;
+        var tailQ = nextTask._0._1;
         mvar[name].queue = tailQ;
         setTimeout(wakeup, 0);
     }
@@ -58,9 +57,10 @@ Elm.Native.Concurrent.MVar.make = function(localRuntime) {
         _tryWakeup(mvar, "producer");
         callback(Task.succeed(value));
       };
+      var isFull = mvar.value.ctor === "Just";
       var noKnownConsumers = Queue.isEmpty(mvar.consumer.queue);
       mvar.consumer.queue = A2(Queue.push, wakeupTake, mvar.consumer.queue);
-      if (noKnownConsumers) {
+      if (isFull && noKnownConsumers) {
         var testFlag = {};
         mvar.consumer.flag = testFlag;
         var testWakeup = function() {
@@ -85,9 +85,10 @@ Elm.Native.Concurrent.MVar.make = function(localRuntime) {
         _tryWakeup(mvar, "consumer");
         callback(Task.succeed(Utils.Tuple0));
       };
+      var isEmpty = mvar.value.ctor === "Nothing";
       var noKnownProducers = Queue.isEmpty(mvar.producer.queue);
       mvar.producer.queue = A2(Queue.push, wakeupPut, mvar.producer.queue);
-      if (noKnownProducers) {
+      if (isEmpty && noKnownProducers) {
         var testFlag = {};
         mvar.producer.flag = testFlag;
         var testWakeup = function() {
