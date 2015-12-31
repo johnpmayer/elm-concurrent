@@ -17,7 +17,9 @@ producer : Int -> Chan Int -> Task x ()
 producer x chan = 
   writeChan chan x  `andThen` \_ ->
   sleep 100         `andThen` \_ ->
-  producer (x + 1) chan
+    if x > 0
+    then producer (x + 1) chan
+    else succeed ()
 
 consumer : Chan Int -> Task x ()
 consumer chan = 
@@ -25,9 +27,11 @@ consumer chan =
   send drainResult.address (Just x) `andThen` \_ ->
   consumer chan
 
+-- Demonstrate that the chan can fill up
+
 port startup : Task x ()
 port startup = 
   newChan               `andThen` \chan ->
-  spawn (producer 0 chan) `andThen` \_ ->
+  producer 10 chan      `andThen` \_ ->
   spawn (consumer chan) `andThen` \_ ->
   succeed ()
