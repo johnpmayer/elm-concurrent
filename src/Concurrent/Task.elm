@@ -3,6 +3,7 @@ module Concurrent.Task
   ( Future, future, wait
   , onSuccess, onFailure
   , waitBoth
+  , map2
   ) where
 
 {-|
@@ -13,10 +14,12 @@ module Concurrent.Task
 
 @docs waitBoth
 
+@docs map2
+
 -}
   
 import Result exposing (Result)
-import Task exposing (Task, ThreadID, andThen, fail, fromResult, onError, spawn, succeed, toResult)
+import Task exposing (Task, ThreadID, andThen, fail, fromResult, map, onError, spawn, succeed, toResult)
 import TaskUtils exposing (andThen_)
 import Concurrent.MVar exposing (MVar, newEmptyMVar, putMVar, readMVar, takeMVar)
 
@@ -65,15 +68,17 @@ If either task fails, this function fails with that error
 If both tasks fail, this function fails with the error of the first task
 -}
 waitBoth : Task x a -> Task x b -> Task x (a,b)
-waitBoth task1 task2 = 
-  newEmptyMVar `andThen` \var1 ->
-  newEmptyMVar `andThen` \var2 ->
-  spawn (toResult task1 `andThen` putMVar var1) `andThen_`
-  spawn (toResult task2 `andThen` putMVar var2) `andThen_`
-  takeMVar var1 `andThen` \result1 ->
-  takeMVar var2 `andThen` \result2 ->
-  case (result1, result2) of
-    (Ok a, Ok b) -> succeed (a, b)
-    (Err err, _) -> fail err
-    (_, Err err) -> fail err
+waitBoth taskA taskB = 
+  future taskA `andThen` \future1 ->
+  future taskB `andThen` \future2 ->
+  wait future1 `andThen` \a ->
+  wait future2 `andThen` \b ->
+  succeed (a, b)
 
+{-| 
+Put the results of two tasks together. If either task fails, the whole
+thing fails. Unlike Task.map2 from the core library, the tasks run in 
+parallel.
+-}
+map2 : (a -> b -> c) -> Task x a -> Task x b -> Task x c
+map2 f taskA taskB = map (uncurry f) <| waitBoth taskA taskB
