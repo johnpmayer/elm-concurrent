@@ -8,6 +8,7 @@
     ],
     "exposed-modules": [
       "Concurrent.Chan",
+      "Concurrent.Future",
       "Concurrent.MVar",
       "Concurrent.Task"
     ],
