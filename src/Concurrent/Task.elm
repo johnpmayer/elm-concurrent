@@ -1,12 +1,13 @@
 
 module Concurrent.Task
-  ( Future, future, onSuccess, onFailure
+  ( Future, future, wait
+  , onSuccess, onFailure
   , waitBoth
   ) where
 
 {-|
 
-@docs Future, future
+@docs Future, future, wait
 
 @docs onSuccess, onFailure
 
@@ -15,7 +16,7 @@ module Concurrent.Task
 -}
   
 import Result exposing (Result)
-import Task exposing (Task, ThreadID, andThen, fail, spawn, succeed, toResult)
+import Task exposing (Task, ThreadID, andThen, fail, fromResult, onError, spawn, succeed, toResult)
 import TaskUtils exposing (andThen_)
 import Concurrent.MVar exposing (MVar, newEmptyMVar, putMVar, readMVar, takeMVar)
 
@@ -29,24 +30,35 @@ future task =
   spawn (toResult task `andThen` putMVar var) `andThen_`
   succeed (Future var)
 
-{-| Register a task to run when the future succeeds -}
-onSuccess : Future x a -> (a -> Task y ()) -> Task z ThreadID
+{-| Wait for a future to resolve -}
+wait : Future x a -> Task x a
+wait (Future var) = 
+  readMVar var `andThen` fromResult
+
+{-| 
+Register a task to run if the future succeeds
+Nothing is done if the registered task itself fails
+-}
+onSuccess : Future x a -> (a -> Task y b) -> Task z ThreadID
 onSuccess (Future var) task =
   spawn <|
     readMVar var `andThen` \result ->
     case result of
-      Ok a -> task a
+      Ok a -> task a `andThen_` succeed ()
       Err e -> succeed ()
 
-{-| Register a task to run when the future fails -}
-onFailure : Future x a -> (x -> Task y ()) -> Task z ThreadID
+{-| 
+Register a task to run if the future fails
+Nothing is done if the registered task itself fails
+-}
+onFailure : Future x a -> (x -> Task y b) -> Task z ThreadID
 onFailure (Future var) task =
   spawn <|
     readMVar var `andThen` \result ->
     case result of
       Ok a -> succeed ()
-      Err e -> task e
-      
+      Err e -> task e `andThen_` succeed ()
+
 {-| 
 Run both tasks in parallel, returning both results
 If either task fails, this function fails with that error
