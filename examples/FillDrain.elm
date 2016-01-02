@@ -18,17 +18,17 @@ main = map (\(fill, drain) -> flow down [show fill, show drain]) (map2 (,) fillR
 
 produceN : Int -> Int -> Chan Int -> Task x ()
 produceN x max chan = 
-  send fillResult.address (Just ("Fill " ++ toString x)) `andThen` \_ ->
-  writeChan chan x                                      `andThen` \_ ->
-  sleep 100                                             `andThen` \_ ->
+  send fillResult.address (Just ("Fill " ++ toString x))  `andThen` \_ ->
+  writeChan chan x                                        `andThen` \_ ->
+  sleep 100                                               `andThen` \_ ->
     if x < max
     then produceN (x + 1) max chan
     else succeed ()
 
 consumer : Chan Int -> Task x ()
 consumer chan = 
-  readChan chan                                           `andThen` \x ->
-  send drainResult.address (Just ("Drain " ++ toString x)) `andThen` \_ ->
+  readChan chan                                             `andThen` \x ->
+  send drainResult.address (Just ("Drain " ++ toString x))  `andThen` \_ ->
   consumer chan
 
 -- Demonstrate that the chan can fill up without blocking, and then drain & keep filling concurrently
