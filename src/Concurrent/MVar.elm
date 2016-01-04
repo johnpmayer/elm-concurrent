@@ -45,9 +45,9 @@ newEmptyMVar = Native.Concurrent.MVar.newEmptyMVar
 {-| Create an MVar holding the provided initial value -}
 newMVar : a -> Task x (MVar a)
 newMVar value = 
-  newEmptyMVar        `andThen` (\mvar ->
+  newEmptyMVar        `andThen` \mvar ->
   putMVar mvar value  `andThen_` 
-  succeed mvar)
+  succeed mvar
 
 {-| Take the value held by the MVar, blocking if empty. Multiple blocking consumers are woken in FIFO order. -}
 takeMVar : MVar a -> Task x a
@@ -60,15 +60,15 @@ putMVar = Native.Concurrent.MVar.putMVar
 {-| Read the MVar -}
 readMVar : MVar a -> Task x a
 readMVar var =
-  takeMVar var    `andThen` (\val ->
+  takeMVar var    `andThen` \val ->
   putMVar var val `andThen_`
-  succeed val)
+  succeed val
 
 {-| Modify the MVar, replacing if the replacement task fails -}
 modifyMVar : MVar a -> (a -> Task x (a,b)) -> Task x b
 modifyMVar var task =
-  takeMVar var        `andThen` (\val ->
-  toResult (task val) `andThen` (\result ->
+  takeMVar var        `andThen` \val ->
+  toResult (task val) `andThen` \result ->
     case result of
       Ok (new_val, ret_val) -> putMVar var new_val `andThen_` succeed ret_val
-      Err error -> putMVar var val `andThen_` fail error))
+      Err error -> putMVar var val `andThen_` fail error
