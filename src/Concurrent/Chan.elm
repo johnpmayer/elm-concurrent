@@ -31,23 +31,30 @@ type ChItem a = ChItem a (Stream a)
 {-| Create a new channel -}
 newChan : Task x (Chan a)
 newChan = 
-  newEmptyMVar  `andThen` (\hole ->
-  newMVar hole  `andThen` (\readVar ->
-  newMVar hole  `andThen` (\writeVar ->
-  succeed (Chan { readVar = readVar, writeVar = writeVar}))))
+  newEmptyMVar  `andThen` \hole ->
+  newMVar hole  `andThen` \readVar ->
+  newMVar hole  `andThen` \writeVar ->
+  succeed (Chan { readVar = readVar, writeVar = writeVar})
   
 {-| Write a value to the channel -}
 writeChan : Chan a -> a -> Task x () 
 writeChan (Chan {writeVar}) val = 
-  newEmptyMVar                            `andThen` (\new_hole ->
-  modifyMVar writeVar <| (\old_hole -> 
-    putMVar old_hole (ChItem val new_hole) `andThen_` succeed (new_hole, ())))
+  newEmptyMVar                            `andThen` \new_hole ->
+  modifyMVar writeVar <| \old_hole -> 
+    putMVar old_hole (ChItem val new_hole) `andThen_` succeed (new_hole, ())
 
 {-| Read the next value from the channel -}
 readChan : Chan a -> Task x a
 readChan (Chan {readVar}) =
-  modifyMVar readVar <| (\read_end ->
-    readMVar read_end `andThen` (\(ChItem val new_read_end) ->
-    succeed (new_read_end, val)))
+  modifyMVar readVar <| \read_end ->
+    readMVar read_end `andThen` \(ChItem val new_read_end) ->
+    succeed (new_read_end, val)
 
-
+{-| Duplicate a chan. The duplicate begins empty, 
+but consecutive writes are available by both, creating
+a 'broadcast' effect -}
+dupChan : Chan a -> Task x (Chan a)
+dupChan (Chan {writeVar}) =
+  readMVar writeVar `andThen` \hole ->
+  newMVar hole `andThen` \newReadVar ->
+  succeed (Chan { readVar = newReadVar, writeVar = writeVar })
