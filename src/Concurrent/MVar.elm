@@ -3,7 +3,8 @@ module Concurrent.MVar
   ( MVar
   , newEmptyMVar, newMVar
   , takeMVar, putMVar
-  , readMVar, modifyMVar
+  , readMVar, withMVar
+  , modifyMVar_, modifyMVar
   ) where
 
 {-| Concurrency primitives for working with Tasks
@@ -12,7 +13,9 @@ module Concurrent.MVar
 
 @docs MVar
 
-Mutable variables either have a value or do not have a value. They are directly modelled after Haskell's MVar.
+Mutable variables either have a value or do not 
+have a value. They are directly modelled after 
+Haskell's MVar.
 
 https://hackage.haskell.org/package/base/docs/Control-Concurrent-MVar.html
 
@@ -26,12 +29,15 @@ https://hackage.haskell.org/package/base/docs/Control-Concurrent-MVar.html
 
 # Compound actions
 
-@docs readMVar, modifyMVar
+These operations are not atomic and their use
+may introduce race conditions
+
+@docs readMVar, withMVar, modifyMVar_, modifyMVar
 
 -}
 
 import Task exposing (Task, andThen, fail, succeed, toResult)
-import TaskUtils exposing (andThen_)
+import TaskUtils exposing (andThen_, bracket, bracketOnError)
 import Native.Concurrent.MVar
 import Queue -- Required by Native Code
 
@@ -64,11 +70,26 @@ readMVar var =
   putMVar var val `andThen_`
   succeed val
 
+{-| Operate on the contents of the MVar -}
+withMVar : MVar a -> (a -> Task x b) -> Task x b
+withMVar var work =
+  bracket (takeMVar var) (putMVar var) work
+
 {-| Modify the MVar, replacing if the replacement task fails -}
+modifyMVar_ : MVar a -> (a -> Task x a) -> Task x ()
+modifyMVar_ var update =
+  let acquire = takeMVar var
+      release = putMVar var
+      work = \val ->
+        update val `andThen` putMVar var
+  in bracketOnError acquire release work
+
+{-| Modify the MVar, replacing if the replacement task fails. -}
 modifyMVar : MVar a -> (a -> Task x (a,b)) -> Task x b
-modifyMVar var task =
-  takeMVar var        `andThen` \val ->
-  toResult (task val) `andThen` \result ->
-    case result of
-      Ok (new_val, ret_val) -> putMVar var new_val `andThen_` succeed ret_val
-      Err error -> putMVar var val `andThen_` fail error
+modifyMVar var update =
+  let acquire = takeMVar var
+      release = putMVar var
+      work = \val -> 
+        update val `andThen` \(new_val, ret_val) ->
+        putMVar var new_val `andThen_` succeed ret_val
+  in bracketOnError acquire release work
