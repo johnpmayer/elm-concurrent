@@ -18,7 +18,7 @@ module Concurrent.Future
 import Result exposing (Result)
 import Task exposing (Task, ThreadID, andThen, fail, fromResult, onError, spawn, toResult)
 import TaskUtils exposing (Never, andThen_, unsafeFromNever)
-import Concurrent.MVar exposing (MVar, newEmptyMVar, putMVar, readMVar, takeMVar)
+import Concurrent.Pigeonhole exposing (Pigeonhole, newEmpty, put, read, take)
 
 {-| A handle to a result that may be fulfilled -}
 type Future x a = Future { await : Task Never (Result x a) }
@@ -26,9 +26,9 @@ type Future x a = Future { await : Task Never (Result x a) }
 {-| Spawn a task, and return a Future -}
 future : Task x a -> Task x (Future x a)
 future task =
-  newEmptyMVar `andThen` \var ->
-  spawn (toResult task `andThen` putMVar var) `andThen_`
-  let await = readMVar var
+  newEmpty `andThen` \var ->
+  spawn (toResult task `andThen` put var) `andThen_`
+  let await = read var
   in Task.succeed (Future { await = await })
 
 {-| Wait for a future to resolve -}

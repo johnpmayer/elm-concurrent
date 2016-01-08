@@ -1,7 +1,7 @@
 
 module Handoff where
 
-import Concurrent.MVar exposing (MVar, newEmptyMVar, takeMVar, putMVar)
+import Concurrent.Pigeonhole exposing (Pigeonhole, newEmpty, take, put)
 import Graphics.Element exposing (Element, show)
 import Signal exposing (constant, Mailbox, mailbox, map, send)
 import Task exposing (Task, andThen, spawn, succeed)
@@ -12,18 +12,18 @@ handoffResult = mailbox Nothing
 main : Signal Element
 main = map show handoffResult.signal
 
-producer : MVar Int -> Task x ()
+producer : Pigeonhole Int -> Task x ()
 producer sync = 
-  putMVar sync 5
+  put sync 5
 
-consumer : MVar Int -> Task x ()
+consumer : Pigeonhole Int -> Task x ()
 consumer sync = 
-  takeMVar sync `andThen` \x ->
+  take sync `andThen` \x ->
   send handoffResult.address <| Just x
 
 port startup : Task x ()
 port startup = 
-  newEmptyMVar          `andThen` \sync ->
+  newEmpty              `andThen` \sync ->
   spawn (producer sync) `andThen` \_ ->
   spawn (consumer sync) `andThen` \_ ->
   succeed ()

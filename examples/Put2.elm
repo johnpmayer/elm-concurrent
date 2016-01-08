@@ -1,10 +1,11 @@
 
 module Put2 where
 
-import Concurrent.MVar exposing (MVar, newEmptyMVar, takeMVar, putMVar)
+import Concurrent.Pigeonhole exposing (Pigeonhole, newEmpty, take, put)
 import Graphics.Element exposing (Element, show)
 import Signal exposing (constant, Mailbox, mailbox, map, send)
 import Task exposing (Task, andThen, spawn, succeed)
+import TaskUtils exposing (andThen_)
 
 handoffResult : Mailbox (Maybe String)
 handoffResult = mailbox Nothing
@@ -12,16 +13,16 @@ handoffResult = mailbox Nothing
 main : Signal Element
 main = map show handoffResult.signal
 
-producer : MVar Int -> Task x ()
+producer : Pigeonhole Int -> Task x ()
 producer sync = 
-  send handoffResult.address (Just "Put none") `andThen` \_ ->
-  putMVar sync 5 `andThen` \_ ->
-  send handoffResult.address (Just "Put first") `andThen` \_ ->
-  putMVar sync 2 `andThen` \_ ->
+  send handoffResult.address (Just "Put none")  `andThen_`
+  put sync 5                                    `andThen_`
+  send handoffResult.address (Just "Put first") `andThen_`
+  put sync 2                                    `andThen_`
   send handoffResult.address (Just "Put second")
 
 port startup : Task x ()
 port startup = 
-  newEmptyMVar          `andThen` \sync ->
+  newEmpty              `andThen` \sync ->
   spawn (producer sync) `andThen` \_ ->
   succeed ()

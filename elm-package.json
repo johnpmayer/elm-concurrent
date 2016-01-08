@@ -9,7 +9,7 @@
     "exposed-modules": [
       "Concurrent.Chan",
       "Concurrent.Future",
-      "Concurrent.MVar",
+      "Concurrent.Pigeonhole",
       "Concurrent.Task"
     ],
     "native-modules": true,

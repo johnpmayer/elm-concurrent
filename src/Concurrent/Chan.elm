@@ -17,37 +17,37 @@ Unbounded Channels
 
 import Task exposing (Task, andThen, succeed)
 import TaskUtils exposing (andThen_)
-import Concurrent.MVar exposing (MVar, modifyMVar, newEmptyMVar, newMVar, putMVar, readMVar, takeMVar)
+import Concurrent.Pigeonhole exposing (Pigeonhole, modify, newEmpty, new, put, read, take)
 
 {-| Chan -}
 type Chan a = Chan { 
-  readVar : MVar (Stream a), 
-  writeVar : MVar (Stream a) }
+  readVar  : Pigeonhole (Stream a), 
+  writeVar : Pigeonhole (Stream a) }
 
-type alias Stream a = MVar (ChItem a)
+type alias Stream a = Pigeonhole (ChItem a)
 
 type ChItem a = ChItem a (Stream a)
 
 {-| Create a new channel -}
 newChan : Task x (Chan a)
 newChan = 
-  newEmptyMVar  `andThen` \hole ->
-  newMVar hole  `andThen` \readVar ->
-  newMVar hole  `andThen` \writeVar ->
+  newEmpty  `andThen` \hole ->
+  new hole  `andThen` \readVar ->
+  new hole  `andThen` \writeVar ->
   succeed (Chan { readVar = readVar, writeVar = writeVar})
   
 {-| Write a value to the channel -}
 writeChan : Chan a -> a -> Task x () 
 writeChan (Chan {writeVar}) val = 
-  newEmptyMVar                            `andThen` \new_hole ->
-  modifyMVar writeVar <| \old_hole -> 
-    putMVar old_hole (ChItem val new_hole) `andThen_` succeed (new_hole, ())
+  newEmpty `andThen` \new_hole ->
+  modify writeVar <| \old_hole -> 
+    put old_hole (ChItem val new_hole) `andThen_` succeed (new_hole, ())
 
 {-| Read the next value from the channel -}
 readChan : Chan a -> Task x a
 readChan (Chan {readVar}) =
-  modifyMVar readVar <| \read_end ->
-    readMVar read_end `andThen` \(ChItem val new_read_end) ->
+  modify readVar <| \read_end ->
+    read read_end `andThen` \(ChItem val new_read_end) ->
     succeed (new_read_end, val)
 
 {-| Duplicate a chan. The duplicate begins empty, 
@@ -55,6 +55,6 @@ but consecutive writes are available by both, creating
 a 'broadcast' effect -}
 dupChan : Chan a -> Task x (Chan a)
 dupChan (Chan {writeVar}) =
-  readMVar writeVar `andThen` \hole ->
-  newMVar hole `andThen` \newReadVar ->
+  read writeVar `andThen` \hole ->
+  new hole `andThen` \newReadVar ->
   succeed (Chan { readVar = newReadVar, writeVar = writeVar })
