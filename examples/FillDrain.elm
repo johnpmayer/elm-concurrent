@@ -1,7 +1,7 @@
 
 module FillDrain where
 
-import Concurrent.Chan exposing (Chan, newChan, writeChan, readChan)
+import Concurrent.Chan exposing (Chan, new, write, read)
 import Debug exposing (log)
 import Graphics.Element exposing (Element, down, flow, show)
 import Signal exposing (constant, Mailbox, mailbox, map, map2, send)
@@ -19,7 +19,7 @@ main = map (\(fill, drain) -> flow down [show fill, show drain]) (map2 (,) fillR
 produceN : Int -> Int -> Chan Int -> Task x ()
 produceN x max chan = 
   send fillResult.address (Just ("Fill " ++ toString x))  `andThen` \_ ->
-  writeChan chan x                                        `andThen` \_ ->
+  write chan x                                            `andThen` \_ ->
   sleep 100                                               `andThen` \_ ->
     if x < max
     then produceN (x + 1) max chan
@@ -27,7 +27,7 @@ produceN x max chan =
 
 consumer : Chan Int -> Task x ()
 consumer chan = 
-  readChan chan                                             `andThen` \x ->
+  read chan                                                 `andThen` \x ->
   send drainResult.address (Just ("Drain " ++ toString x))  `andThen` \_ ->
   consumer chan
 
@@ -35,7 +35,7 @@ consumer chan =
 
 port startup : Task x ()
 port startup = 
-  newChan                     `andThen` \chan ->
+  new                         `andThen` \chan ->
   produceN 0 15 chan          `andThen` \_ ->
   spawn (consumer chan)       `andThen` \_ ->
   spawn (produceN 15 50 chan) `andThen` \_ ->
