@@ -1,8 +1,8 @@
 
 module TaskUtils (Never, andThen_, bracket, bracketOnError, unsafeFromNever) where
 
+import Debug exposing (crash)
 import Task exposing (Task, andThen, fail, fromResult, onError, succeed, toResult)
-import Native.TaskUtils exposing (fromNever)
 
 andThen_ : Task x a -> Task x b -> Task x b
 andThen_ t1 t2 = t1 `andThen` (\_ -> t2)
@@ -22,7 +22,7 @@ bracketOnError acquire release work =
       Ok c -> succeed c
       Err error -> release resource `andThen_` fail error
 
-type Never = Never_
+type Never = Never Never
 
 unsafeFromNever : Task Never a -> Task x a
-unsafeFromNever = Native.TaskUtils.fromNever
+unsafeFromNever wontFail = onError wontFail (\impossibleError -> crash "Task Never a produced an error")
